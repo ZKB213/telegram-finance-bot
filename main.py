@@ -1,5 +1,4 @@
 import json
-import os
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -20,7 +19,7 @@ def sauver(data):
         json.dump(data,f)
 
 data = charger()
-etat_users = {}
+etat = None
 
 keyboard = [["Gain","Perte"],["Solde"]]
 
@@ -32,45 +31,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global etat
 
-    user_id = update.message.from_user.id
-    user_name = update.message.from_user.first_name
     texte = update.message.text
 
     if texte == "Gain":
-        etat_users[user_id] = "gain"
-        await update.message.reply_text("Entre le montant du gain")
+        etat = "gain"
+        await update.message.reply_text("Entre le montant gagné")
 
     elif texte == "Perte":
-        etat_users[user_id] = "perte"
-        await update.message.reply_text("Entre le montant de la perte")
+        etat = "perte"
+        await update.message.reply_text("Entre le montant perdu")
 
     elif texte == "Solde":
-        await update.message.reply_text(f"💰 Solde actuel : {data['solde']}€")
+        await update.message.reply_text(f"💰 Ton solde : {data['solde']}€")
 
     else:
         try:
             montant = float(texte)
 
-            etat = etat_users.get(user_id)
-
             if etat == "gain":
                 data["solde"] += montant
-                action = "gain"
 
             elif etat == "perte":
                 data["solde"] -= montant
-                action = "perte"
-
-            else:
-                return
 
             sauver(data)
 
-            await update.message.reply_text(
-                f"👤 {user_name} a ajouté une {action} de {montant}€\n"
-                f"💰 Nouveau solde : {data['solde']}€"
-            )
+            await update.message.reply_text(f"✅ Nouveau solde : {data['solde']}€")
 
         except:
             await update.message.reply_text("Entre un nombre valide")
