@@ -3,7 +3,7 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 import os
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("TOKEN").strip()  # supprime espaces et sauts de ligne
 
 FILE = "argent.json"
 
