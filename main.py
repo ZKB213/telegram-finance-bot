@@ -3,7 +3,7 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 import os
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv(8099010522:AAGw-7vF2mvV9LNgNaMkn8wnO4GJQI-uO0E)
 
 FILE = "argent.json"
 
@@ -12,7 +12,7 @@ def charger():
         with open(FILE) as f:
             return json.load(f)
     except:
-        return {"solde":1000}
+        return {"solde":740,40}
 
 def sauver(data):
     with open(FILE,"w") as f:
