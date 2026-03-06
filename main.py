@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -7,86 +8,158 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 import os
 TOKEN = os.getenv("TOKEN").strip()  # récupère la variable TOKEN et enlève les espaces ou sauts de ligne
 
-if not TOKEN:
-    raise ValueError("Le token n'est pas défini dans les variables d'environnement")
-TOKEN = TOKEN.strip()  # supprime espaces et sauts de ligne
-
-# Fichier pour stocker le solde commun
 FILE = "argent.json"
 
-# Charger le solde depuis le fichier
+USERS = []
+
+etat = None
+personne = None
+
+menu_principal = [
+    ["Lilou", "Farah", "Hidayat"],
+    ["Historique"]
+]
+
+menu_action = [
+    ["Gain", "Dépense"],
+    ["Retour"]
+]
+
 def charger():
     try:
         with open(FILE) as f:
             return json.load(f)
     except:
-        # Valeur de départ si le fichier n'existe pas
-        return {"solde": 740.40}
+        return {
+            "solde": 740.40,
+            "historique": []
+        }
 
-# Sauver le solde dans le fichier
 def sauver(data):
     with open(FILE, "w") as f:
         json.dump(data, f)
 
-# Charger le solde au démarrage
 data = charger()
-etat = None
 
-# Clavier du bot
-keyboard = [["Gain", "Perte"], ["Solde"]]
+async def notifier(context, message):
+    for user in USERS:
+        try:
+            await context.bot.send_message(chat_id=user, text=message)
+        except:
+            pass
 
-# Commande /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    user_id = update.effective_chat.id
+
+    if user_id not in USERS:
+        USERS.append(user_id)
+
+    clavier = ReplyKeyboardMarkup(menu_principal, resize_keyboard=True)
+
     await update.message.reply_text(
         f"💰 Solde actuel : {data['solde']}€",
-        reply_markup=reply
+        reply_markup=clavier
     )
 
-# Gestion des messages
 async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     global etat
+    global personne
 
     texte = update.message.text
 
-    if texte == "Gain":
+    if texte in ["🟤 Lilou", "🔵 Farah", "🟣 Hidayat"]:
+        personne = texte.replace("🟤 ","").replace("🔵 ","").replace("🟣 ","")
+        clavier = ReplyKeyboardMarkup(menu_action, resize_keyboard=True)
+
+        clavier = ReplyKeyboardMarkup(menu_action, resize_keyboard=True)
+
+        await update.message.reply_text(
+            f"{personne} sélectionné",
+            reply_markup=clavier
+        )
+
+    elif texte == "Gain":
         etat = "gain"
-        await update.message.reply_text("💵 Entre le montant gagné :")
+        await update.message.reply_text("Entre le montant gagné")
 
-    elif texte == "Perte":
-        etat = "perte"
-        await update.message.reply_text("💸 Entre le montant perdu :")
+    elif texte == "Dépense":
+        etat = "depense"
+        await update.message.reply_text("Entre le montant dépensé")
 
-    elif texte == "Solde":
-        await update.message.reply_text(f"💰 Solde actuel : {data['solde']}€")
+    elif texte == "Retour":
+
+        clavier = ReplyKeyboardMarkup(menu_principal, resize_keyboard=True)
+
+        await update.message.reply_text(
+            "Menu principal",
+            reply_markup=clavier
+        )
+
+    elif texte == "Historique":
+
+        if not data["historique"]:
+            await update.message.reply_text("Aucun historique")
+            return
+
+        historique_txt = ""
+
+        for action in data["historique"][-20:]:
+
+            symbole = "➕" if action["type"] == "gain" else "➖"
+
+            historique_txt += (
+                f"{action['date']}\n"
+                f"{action['personne']} {symbole} {action['montant']}€\n"
+                f"Solde : {action['solde']}€\n\n"
+            )
+
+        await update.message.reply_text(historique_txt)
 
     else:
+
         try:
-            montant = float(texte.replace(",", "."))  # support virgule ou point
+
+            montant = float(texte.replace(",", "."))
 
             if etat == "gain":
                 data["solde"] += montant
 
-            elif etat == "perte":
+            elif etat == "depense":
                 data["solde"] -= montant
 
             else:
-                await update.message.reply_text("Choisis d'abord Gain ou Perte")
+                await update.message.reply_text("Choisis Gain ou Dépense")
                 return
+
+            date = datetime.now().strftime("%d/%m/%Y")
+
+            data["historique"].append({
+                "date": date,
+                "personne": personne,
+                "type": etat,
+                "montant": montant,
+                "solde": data["solde"]
+            })
 
             sauver(data)
 
-            await update.message.reply_text(f"✅ Nouveau solde : {data['solde']}€")
+            symbole = "➕" if etat == "gain" else "➖"
 
-        except ValueError:
-            await update.message.reply_text("❌ Entre un nombre valide")
+            message_resultat = (
+                f"{personne} {symbole} {montant}€\n"
+                f"💰 Solde : {data['solde']}€"
+            )
 
-# Création de l'application
+            await notifier(context, message_resultat)
+
+        except:
+            await update.message.reply_text("Entre un nombre valide")
+
 app = ApplicationBuilder().token(TOKEN).build()
 
-# Ajouter les handlers
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message))
 
-# Lancer le bot
 app.run_polling()
