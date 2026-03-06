@@ -4,7 +4,8 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 # ✅ Récupérer le token correctement et le nettoyer
-TOKEN = "8099010522:AAGw-7vF2mvV9LNgNaMkn8wnO4GJQI-uO0E"
+import os
+TOKEN = os.getenv("TOKEN").strip()  # récupère la variable TOKEN et enlève les espaces ou sauts de ligne
 
 if not TOKEN:
     raise ValueError("Le token n'est pas défini dans les variables d'environnement")
