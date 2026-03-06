@@ -12,7 +12,7 @@ def charger():
         with open(FILE) as f:
             return json.load(f)
     except:
-        return {"solde":740,40}
+        return {"solde": 740.40}
 
 def sauver(data):
     with open(FILE,"w") as f:
