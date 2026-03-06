@@ -2,7 +2,8 @@ import json
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8099010522:AAGw-7vF2mvV9LNgNaMkn8wnO4GJQI-uO0E"
+import os
+TOKEN = os.getenv(8099010522:AAGw-7vF2mvV9LNgNaMkn8wnO4GJQI-uO0E)
 
 FILE = "argent.json"
 
