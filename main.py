@@ -4,9 +4,7 @@ from datetime import datetime
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# ✅ Récupérer le token correctement et le nettoyer
-import os
-TOKEN = os.getenv("TOKEN").strip()  # récupère la variable TOKEN et enlève les espaces ou sauts de ligne
+TOKEN = os.getenv("TOKEN").strip()
 
 FILE = "argent.json"
 
@@ -16,13 +14,13 @@ etat = None
 personne = None
 
 menu_principal = [
-    ["Lilou", "Farah", "Hidayat"],
-    ["Historique"]
+    ["🟤 Lilou", "🔵 Farah", "🟣 Hidayat"],
+    ["📜 Historique"]
 ]
 
 menu_action = [
-    ["Gain", "Dépense"],
-    ["Retour"]
+    ["💰 Gain", "💸 Dépense"],
+    ["⬅️ Retour"]
 ]
 
 def charger():
@@ -48,6 +46,7 @@ async def notifier(context, message):
         except:
             pass
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_chat.id
@@ -62,6 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=clavier
     )
 
+
 async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     global etat
@@ -70,25 +70,28 @@ async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texte = update.message.text
 
     if texte in ["🟤 Lilou", "🔵 Farah", "🟣 Hidayat"]:
+
         personne = texte.replace("🟤 ","").replace("🔵 ","").replace("🟣 ","")
-        clavier = ReplyKeyboardMarkup(menu_action, resize_keyboard=True)
 
         clavier = ReplyKeyboardMarkup(menu_action, resize_keyboard=True)
 
         await update.message.reply_text(
-            f"{personne} sélectionné",
+            f"{texte} sélectionné\nQue veux-tu faire ?",
             reply_markup=clavier
         )
 
-    elif texte == "Gain":
+
+    elif texte == "💰 Gain":
         etat = "gain"
-        await update.message.reply_text("Entre le montant gagné")
+        await update.message.reply_text("💰 Entre le montant gagné")
 
-    elif texte == "Dépense":
+
+    elif texte == "💸 Dépense":
         etat = "depense"
-        await update.message.reply_text("Entre le montant dépensé")
+        await update.message.reply_text("💸 Entre le montant dépensé")
 
-    elif texte == "Retour":
+
+    elif texte == "⬅️ Retour":
 
         clavier = ReplyKeyboardMarkup(menu_principal, resize_keyboard=True)
 
@@ -97,7 +100,8 @@ async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=clavier
         )
 
-    elif texte == "Historique":
+
+    elif texte == "📜 Historique":
 
         if not data["historique"]:
             await update.message.reply_text("Aucun historique")
@@ -117,6 +121,7 @@ async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(historique_txt)
 
+
     else:
 
         try:
@@ -133,7 +138,7 @@ async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Choisis Gain ou Dépense")
                 return
 
-            date = datetime.now().strftime("%d/%m/%Y")
+            date = datetime.now().strftime("%d/%m/%Y %H:%M")
 
             data["historique"].append({
                 "date": date,
@@ -149,13 +154,16 @@ async def message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             message_resultat = (
                 f"{personne} {symbole} {montant}€\n"
-                f"💰 Solde : {data['solde']}€"
+                f"💰 Nouveau solde : {data['solde']}€"
             )
 
             await notifier(context, message_resultat)
 
+            etat = None
+
         except:
             await update.message.reply_text("Entre un nombre valide")
+
 
 app = ApplicationBuilder().token(TOKEN).build()
 
